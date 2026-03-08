@@ -521,6 +521,59 @@ const LEARN = [
   ]},
 ];
 
+/* ================================================================
+   CHART PATTERNS — 買い・売りパターン
+   ================================================================ */
+const CHART_PATTERNS = {
+  buy: [
+    { rank:"S", pct:"92%+", name:"ダブルボトム", en:"Double Bottom",
+      svg:'<polyline points="10,20 50,70 90,30 130,70 170,15" fill="none" stroke="#e8524a" stroke-width="2.5" stroke-linejoin="round"/><line x1="90" y1="30" x2="170" y2="30" stroke="#e8524a" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/><circle cx="50" cy="70" r="4" fill="#e8524a" opacity="0.7"/><circle cx="130" cy="70" r="4" fill="#e8524a" opacity="0.7"/><text x="155" y="12" fill="#e8524a" font-size="10">↑GO!</text>',
+      desc:'W字型の底値パターン。2回同じ安値をつけた後に上昇する。「もう下がらない」という底固めのサイン。ネックライン（中間の高値）を超えたら買いエントリー。' },
+    { rank:"S", pct:"92%+", name:"逆三尊", en:"Inverse Head & Shoulders",
+      svg:'<polyline points="10,25 35,65 55,40 80,75 105,40 125,65 155,20" fill="none" stroke="#e8524a" stroke-width="2.5" stroke-linejoin="round"/><line x1="55" y1="40" x2="155" y2="40" stroke="#e8524a" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/><circle cx="80" cy="75" r="5" fill="#e8524a" opacity="0.6"/>',
+      desc:'3つの谷で真ん中が一番深い形。左右の肩より中央（頭）が低い。ネックラインを上抜けたタイミングが買いのサイン。反転上昇の強力シグナル。' },
+    { rank:"A", pct:"85%+", name:"上昇フラッグ", en:"Bull Flag",
+      svg:'<polyline points="10,75 40,30" fill="none" stroke="#e8524a" stroke-width="2.5"/><polyline points="40,30 70,40 90,35 115,45 135,38" fill="none" stroke="#e8524a" stroke-width="2" stroke-linejoin="round"/><line x1="40" y1="30" x2="135" y2="25" stroke="#e8524a" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/><line x1="55" y1="40" x2="145" y2="35" stroke="#e8524a" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/><polyline points="135,38 175,10" fill="none" stroke="#e8524a" stroke-width="2.5"/>',
+      desc:'急上昇後に小幅な横ばい・微下落が続く形（旗のように見える）。上昇の休憩であり、その後再び強く上がることが多い。フラッグ上限を抜けたら買い。' },
+    { rank:"A", pct:"85%+", name:"上昇トライアングル", en:"Ascending Triangle",
+      svg:'<line x1="20" y1="35" x2="165" y2="35" stroke="#e8524a" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/><polyline points="20,75 50,35 70,60 100,35 120,55 150,35" fill="none" stroke="#e8524a" stroke-width="2.5" stroke-linejoin="round"/><polyline points="150,35 185,10" fill="none" stroke="#e8524a" stroke-width="2.5"/><text x="170" y="8" fill="#e8524a" font-size="10">↑GO!</text>',
+      desc:'上限が水平線で、安値が切り上がっていく三角形。買い圧力が強まっている証拠。水平線を上抜けたときが強い買いシグナル。' },
+    { rank:"B", pct:"70〜80%", name:"カップウィズハンドル", en:"Cup with Handle",
+      svg:'<path d="M15,20 Q80,80 145,20" fill="none" stroke="#e8524a" stroke-width="2.5"/><polyline points="145,20 155,30 165,25 175,15" fill="none" stroke="#e8524a" stroke-width="2" stroke-linejoin="round"/><line x1="15" y1="20" x2="175" y2="20" stroke="#e8524a" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>',
+      desc:'コーヒーカップのような丸い底の後に小さな取っ手部分が続く。ハンドル部分を上抜けたら買いエントリー。上昇継続のサイン。' },
+    { rank:"E", pct:"40〜50%", name:"V字回復", en:"V-Bottom",
+      svg:'<polyline points="15,15 95,78 175,15" fill="none" stroke="#e8524a" stroke-width="2.5" stroke-linejoin="round"/><circle cx="95" cy="78" r="4" fill="#e8524a" opacity="0.7"/>',
+      desc:'急落後に急反発するV字型。勝率は低めで予測が難しい。底を確認してから入るのが重要で、底打ち前に入ると大損のリスクあり。初心者は注意。' },
+  ],
+  sell: [
+    { rank:"S", pct:"92%+", name:"ダブルトップ", en:"Double Top",
+      svg:'<polyline points="10,75 50,25 90,65 130,25 170,80" fill="none" stroke="#3a7bd5" stroke-width="2.5" stroke-linejoin="round"/><line x1="90" y1="65" x2="10" y2="65" stroke="#3a7bd5" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/><circle cx="50" cy="25" r="4" fill="#3a7bd5" opacity="0.7"/><circle cx="130" cy="25" r="4" fill="#3a7bd5" opacity="0.7"/><text x="155" y="88" fill="#3a7bd5" font-size="10">↓DOWN</text>',
+      desc:'M字型の天井パターン。2回同じ高値をつけた後に下落する。「もう上がれない」という天井のサイン。ネックライン（中間の安値）を割ったら売りシグナル。' },
+    { rank:"S", pct:"92%+", name:"三尊", en:"Head & Shoulders",
+      svg:'<polyline points="10,75 35,45 55,65 80,20 105,65 125,45 155,80" fill="none" stroke="#3a7bd5" stroke-width="2.5" stroke-linejoin="round"/><line x1="55" y1="65" x2="155" y2="65" stroke="#3a7bd5" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/><circle cx="80" cy="20" r="5" fill="#3a7bd5" opacity="0.6"/>',
+      desc:'3つの山で真ん中が一番高い形（頭と両肩）。ネックラインを下抜けたら下落開始のサイン。最も信頼性の高い天井パターンの一つ。' },
+    { rank:"A", pct:"85%+", name:"下降フラッグ", en:"Bear Flag",
+      svg:'<polyline points="10,15 45,55" fill="none" stroke="#3a7bd5" stroke-width="2.5"/><polyline points="45,55 70,48 90,52 115,45 135,50" fill="none" stroke="#3a7bd5" stroke-width="2" stroke-linejoin="round"/><line x1="45" y1="55" x2="140" y2="60" stroke="#3a7bd5" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/><line x1="60" y1="45" x2="155" y2="50" stroke="#3a7bd5" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/><polyline points="135,50 175,80" fill="none" stroke="#3a7bd5" stroke-width="2.5"/>',
+      desc:'急落後に小幅な横ばい・微上昇が続く形。下落の休憩であり、その後再び下げることが多い。持ち株を売るか、空売りの検討タイミング。' },
+    { rank:"A", pct:"85%+", name:"下降トライアングル", en:"Descending Triangle",
+      svg:'<line x1="20" y1="65" x2="165" y2="65" stroke="#3a7bd5" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/><polyline points="20,25 50,65 70,40 100,65 120,48 150,65" fill="none" stroke="#3a7bd5" stroke-width="2.5" stroke-linejoin="round"/><polyline points="150,65 185,88" fill="none" stroke="#3a7bd5" stroke-width="2.5"/><text x="155" y="88" fill="#3a7bd5" font-size="10">↓</text>',
+      desc:'下限が水平線で、高値が切り下がっていく三角形。売り圧力が強まっているサイン。水平線を下抜けたときが強い売りシグナル・損切りポイント。' },
+    { rank:"B", pct:"70〜80%", name:"ソーサートップ", en:"Saucer Top",
+      svg:'<path d="M15,65 Q100,20 185,65" fill="none" stroke="#3a7bd5" stroke-width="2.5"/><line x1="15" y1="65" x2="185" y2="65" stroke="#3a7bd5" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>',
+      desc:'緩やかな丸い天井を形成した後に下落するパターン。急激な転換より時間をかけてじわじわ下がる。気づきにくいが長期的な下落トレンドのサイン。' },
+    { rank:"E", pct:"40〜50%", name:"逆V字（急落）", en:"Inverted V-Top",
+      svg:'<polyline points="15,75 95,18 175,75" fill="none" stroke="#3a7bd5" stroke-width="2.5" stroke-linejoin="round"/><circle cx="95" cy="18" r="4" fill="#3a7bd5" opacity="0.7"/>',
+      desc:'急上昇後に急反落する逆V字型。予測が難しく高値掴みのリスク大。天井を確認するのが遅れると大損につながるため、初心者は追いかけ買いをしないことが重要。' },
+  ],
+};
+
+const PATTERN_FLOW = [
+  { title:"トレンドを確認", desc:"今の株価が上昇中か下降中かを週足・日足で確認する" },
+  { title:"パターンを探す", desc:"S・A級の高勝率パターンから優先して探す。まず1〜2個覚えるだけでOK" },
+  { title:"ネックライン確認", desc:"「ここを超えたら買い・割ったら売り」という基準線（ネックライン）を引く" },
+  { title:"エントリー＆損切り設定", desc:"ネックラインを明確に抜けてからエントリー。必ず損切りラインも決めておく" },
+];
+
 /* ================================================================ HELPERS ================================================================ */
 const formatYen = (v) => v >= 10000 ? `${(v/10000).toFixed(0)}億` : `${v.toFixed(0)}万`;
 const MC = { US:["bg-sky-50","text-sky-600","🇺🇸"], JP:["bg-rose-50","text-rose-500","🇯🇵"], EU:["bg-violet-50","text-violet-500","🇪🇺"], KR:["bg-emerald-50","text-emerald-600","🇰🇷"], CN:["bg-amber-50","text-amber-600","🇨🇳"], IN:["bg-orange-50","text-orange-500","🇮🇳"], BR:["bg-lime-50","text-lime-600","🇧🇷"], TW:["bg-teal-50","text-teal-600","🇹🇼"], GB:["bg-indigo-50","text-indigo-500","🇬🇧"], AU:["bg-yellow-50","text-yellow-600","🇦🇺"], CA:["bg-cyan-50","text-cyan-600","🇨🇦"], DK:["bg-pink-50","text-pink-500","🇩🇰"], DE:["bg-slate-100","text-slate-500","🇩🇪"], FR:["bg-blue-50","text-blue-500","🇫🇷"], ES:["bg-red-50","text-red-500","🇪🇸"] };
@@ -552,6 +605,8 @@ function InvestmentDashboard() {
   const [monthly, setMonthly] = useState(5);
   const [expandedFund, setExpandedFund] = useState(null);
   const [expandedTopic, setExpandedTopic] = useState(null);
+  const [expandedPattern, setExpandedPattern] = useState(null);
+  const [patternSection, setPatternSection] = useState("buy");
 
   /* Filter stocks */
   const dbStocks = useMemo(() => {
@@ -1093,6 +1148,64 @@ function InvestmentDashboard() {
                         );
                       })}
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── チャートパターン入門 ── */}
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">チャートパターン入門</h2>
+              <p className="text-xs text-gray-500 mb-3">上昇トレンドでは「買いパターン」を狙い、下降トレンドでは「売りパターン」でリスクを避ける。まずS・A級から覚えよう！</p>
+
+              {/* Buy / Sell toggle */}
+              <div className="flex gap-2 mb-4">
+                <button onClick={()=>setPatternSection("buy")} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition ${patternSection==="buy"?"bg-red-500 text-white shadow":"bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>📈 買いパターン</button>
+                <button onClick={()=>setPatternSection("sell")} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition ${patternSection==="sell"?"bg-blue-500 text-white shadow":"bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>📉 売りパターン</button>
+              </div>
+
+              {/* Pattern cards grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {CHART_PATTERNS[patternSection].map((p,i)=>{
+                  const isBuy = patternSection==="buy";
+                  const color = isBuy ? "red" : "blue";
+                  const pKey = patternSection+"-"+i;
+                  const isOpen = expandedPattern === pKey;
+                  const rankStyle = p.rank==="S" ? "bg-amber-50 text-amber-700 border border-amber-300"
+                    : p.rank==="A" ? "bg-emerald-50 text-emerald-700 border border-emerald-300"
+                    : p.rank==="B" ? "bg-sky-50 text-sky-700 border border-sky-300"
+                    : "bg-purple-50 text-purple-700 border border-purple-300";
+                  const rankIcon = p.rank==="S" ? "⭐" : p.rank==="A" ? "✅" : p.rank==="B" ? "🔵" : "🟣";
+                  return (
+                    <div key={pKey} className={`bg-white rounded-xl border shadow-sm overflow-hidden transition hover:shadow-md ${isBuy?"border-red-100 hover:border-red-300":"border-blue-100 hover:border-blue-300"}`}>
+                      <button className="w-full text-left p-4" onClick={()=>setExpandedPattern(isOpen?null:pKey)}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rankStyle}`}>{rankIcon} {p.rank}級 勝率{p.pct}</span>
+                        </div>
+                        <div className="text-sm font-bold text-gray-900">{p.name}</div>
+                        <div className="text-xs text-gray-400 mb-2">{p.en}</div>
+                        <svg viewBox="0 0 200 90" className={`w-full h-16 rounded-lg ${isBuy?"bg-red-50/50":"bg-blue-50/50"}`} dangerouslySetInnerHTML={{__html:p.svg}}/>
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-4">
+                          <div className={`p-3 rounded-lg text-xs leading-relaxed text-gray-600 ${isBuy?"bg-red-50/60 border border-red-100":"bg-blue-50/60 border border-blue-100"}`}>{p.desc}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── 実践の流れ ── */}
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-3">📋 パターンを見つけたら？ 実践の流れ</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {PATTERN_FLOW.map((s,i)=>(
+                  <div key={i} className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+                    <div className="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm font-bold mx-auto mb-2">{i+1}</div>
+                    <div className="text-sm font-bold text-gray-900 mb-1">{s.title}</div>
+                    <div className="text-xs text-gray-500 leading-relaxed">{s.desc}</div>
                   </div>
                 ))}
               </div>
