@@ -268,12 +268,18 @@ const DB_META = {
 };
 
 const INDICATORS = [
-  { name: "日経平均", value: "39,200", change: "+1.2%", up: true },
-  { name: "S&P 500", value: "5,820", change: "+0.8%", up: true },
-  { name: "USD/JPY", value: "149.50", change: "-0.3%", up: false },
-  { name: "日本10年国債", value: "1.05%", change: "+0.02", up: true },
-  { name: "米10年国債", value: "4.25%", change: "-0.05", up: false },
-  { name: "日本CPI", value: "2.8%", change: "+0.1", up: true },
+  { name: "日経平均", value: "39,200", change: "+1.2%", up: true,
+    d: "東証プライム上場の代表225銘柄の株価平均。日本株全体の温度計であり、海外投資家の売買動向にも敏感に反応する。円安時に上がりやすく、輸出企業の比率が高い点が特徴。TOPIXと比較することで市場の偏りも見える。" },
+  { name: "S&P 500", value: "5,820", change: "+0.8%", up: true,
+    d: "米国の大型株500社で構成される時価総額加重平均指数。世界の株式市場の約60%を占める米国市場のベンチマーク。eMAXIS Slim米国株式やVOOはこの指数に連動する。長期的に年平均約10%のリターンを記録してきた。" },
+  { name: "USD/JPY", value: "149.50", change: "-0.3%", up: false,
+    d: "1ドル＝何円かを表す為替レート。数値が大きいほど円安。円安は輸出企業（トヨタ等）の利益を押し上げ日経平均にプラス、一方で海外資産の円建て評価額は上がるためオルカン等の投資信託にもプラスに働く。日米金利差が主な変動要因。" },
+  { name: "日本10年国債", value: "1.05%", change: "+0.02", up: true,
+    d: "日本政府が発行する10年満期の国債利回り。長期金利の指標であり、住宅ローン金利や企業の借入コストに直結する。日銀のYCC（イールドカーブ・コントロール）政策の修正により変動幅が拡大中。金利上昇は銀行株にプラス、不動産・グロース株にマイナス。" },
+  { name: "米10年国債", value: "4.25%", change: "-0.05", up: false,
+    d: "米国10年国債の利回りで、世界の金融市場の「基準金利」と言われる。FRBの利下げ観測で低下し、インフレ懸念で上昇する。株式のバリュエーション（PER）に逆相関し、金利上昇局面ではグロース株が売られやすい。日米金利差はドル円の主要な変動要因。" },
+  { name: "日本CPI", value: "2.8%", change: "+0.1", up: true,
+    d: "消費者物価指数（Consumer Price Index）の前年同月比。物価の上昇率を示し、日銀の金融政策判断の最重要指標の一つ。2%を超える状態が持続すれば利上げの根拠となる。コアCPI（生鮮食品除く）とコアコアCPI（生鮮食品・エネルギー除く）もチェックすると基調が見える。" },
 ];
 
 /* ================================================================
@@ -567,6 +573,40 @@ const CHART_PATTERNS = {
   ],
 };
 
+/* ================================================================
+   STOCK CARD GUIDE — 銘柄カードの見方ガイド
+   ================================================================ */
+const STOCK_GUIDE = [
+  { cat: "基本情報の読み方", items: [
+    { t: "国旗 + 市場コード", icon: "🇺🇸 US",
+      d: "銘柄がどの国の市場に上場しているかを示します。US＝米国（NYSE/NASDAQ）、JP＝日本（東証）、EU＝欧州、KR＝韓国、CN＝中国など。投資先の地域分散を考える際の基本情報です。" },
+    { t: "ティッカーシンボル（例: MSFT）", icon: "MSFT",
+      d: "株式市場で銘柄を識別するための略称コード。米国株はアルファベット（AAPL＝Apple、AMZN＝Amazon）、日本株は4桁の数字（7974＝任天堂）が一般的。証券会社の注文画面でこのコードを入力して売買します。" },
+    { t: "変動率（例: +0.9%）", icon: "+0.9%",
+      d: "前日比の株価変動率。緑のプラスは値上がり、赤のマイナスは値下がり。1日で±2%以上動くと大きな変動とされます。ただし短期の変動に一喜一憂せず、長期トレンドを見ることが重要です。" },
+    { t: "企業名と概要説明", icon: "📝",
+      d: "企業の正式名称と、その企業が何をしている会社かの一行サマリー。投資先の事業内容を理解することは、株価が下がった時に「持ち続けるか売るか」を判断する根拠になります。" },
+  ]},
+  { cat: "バリュエーション指標", items: [
+    { t: "PER（株価収益率）", icon: "34.8x",
+      d: "Price Earnings Ratio。株価÷1株あたり利益（EPS）で算出。「今の利益が続くなら投資回収に何年かかるか」を示す。PER 15倍＝割安寄り、25倍以上＝成長期待込み。同じセクター内で比較するのがコツ。IT企業は30倍超でも普通、銀行は10倍前後が一般的。" },
+    { t: "PBR（株価純資産倍率）", icon: "—",
+      d: "Price Book-value Ratio。株価÷1株あたり純資産で算出。PBR 1倍＝会社を解散した時の資産価値と株価が同じ。1倍割れは「解散価値以下で買える」状態で割安の目安。東証がPBR1倍割れ企業に改善要請を出したことで注目度が上がっている。" },
+    { t: "配当利回り（例: 0.9%）", icon: "0.9%",
+      d: "年間配当金÷株価×100。株を持っているだけで毎年もらえるインカムゲインの利回り。日本株平均は約2%、高配当株は3〜5%。0%は無配当で、成長投資に利益を回している企業（Amazon等）に多い。配当+値上がり益＝トータルリターンで考えることが大切。" },
+  ]},
+  { cat: "評価と分類", items: [
+    { t: "バリュエーション判定（やや割高 等）", icon: "📊",
+      d: "PERとセクター平均を比較した相対的な割安・割高の判定。「割高＝買ってはいけない」ではなく、それだけ成長期待が高いという意味。逆に「割安」でも業績悪化中なら「バリュートラップ（割安の罠）」の可能性がある。" },
+    { t: "評価（●●●●● 5段階）", icon: "●●●●●",
+      d: "総合的な投資魅力度を5段階で表示。業績の安定性、成長性、財務健全性、配当政策、競争優位性などを総合的に評価。5つ星＝長期保有の核銘柄候補、3つ星＝一般的、1〜2つ星＝リスクが高いまたは不確実性が大きい。" },
+    { t: "タグ（世界経済・セクター等）", icon: "🏷️",
+      d: "その銘柄がどのダッシュボードビューに属するかを示す分類タグ。「世界経済」＝グローバル経済を学ぶための代表銘柄、「セクター」＝業種別分析の対象、「Japan」＝日本市場の銘柄。複数タグが付いた銘柄は複数の視点から分析できます。" },
+    { t: "注目ポイント（例: クラウド+AI成長）", icon: "💡",
+      d: "その銘柄の今最も注目すべき投資テーマやカタリスト（株価を動かすきっかけ）を簡潔に表現。決算発表や新製品発表の前に、この注目ポイントが実際どうなっているかをチェックすると投資判断の精度が上がります。" },
+  ]},
+];
+
 const PATTERN_FLOW = [
   { title:"トレンドを確認", desc:"今の株価が上昇中か下降中かを週足・日足で確認する" },
   { title:"パターンを探す", desc:"S・A級の高勝率パターンから優先して探す。まず1〜2個覚えるだけでOK" },
@@ -607,6 +647,10 @@ function InvestmentDashboard() {
   const [expandedTopic, setExpandedTopic] = useState(null);
   const [expandedPattern, setExpandedPattern] = useState(null);
   const [patternSection, setPatternSection] = useState("buy");
+  const [expandedIndicator, setExpandedIndicator] = useState(null);
+  const [expandedGuide, setExpandedGuide] = useState(null);
+  const [expandedJpEcon, setExpandedJpEcon] = useState(null);
+  const [expandedWorldEcon, setExpandedWorldEcon] = useState(null);
 
   /* Filter stocks */
   const dbStocks = useMemo(() => {
@@ -1028,25 +1072,34 @@ function InvestmentDashboard() {
         {/* ========== ECONOMY ========== */}
         {activeTab === "econ" && (
           <div className="space-y-6">
-            {/* 主要経済指標テーブル */}
+            {/* 主要経済指標テーブル — アコーディオン解説付き */}
             <h2 className="text-lg font-bold text-gray-900">主要経済指標</h2>
+            <p className="text-xs text-gray-500 mb-3">各指標をタップすると詳しい解説が表示されます</p>
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead><tr className="border-b border-gray-200">
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left">指標</th>
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-right">現在値</th>
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-right">変動</th>
-                </tr></thead>
-                <tbody className="divide-y divide-gray-200">
-                  {INDICATORS.map(i=>(
-                    <tr key={i.name}>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{i.name}</td>
-                      <td className="py-3 px-4 text-sm font-bold font-mono text-gray-900 text-right">{i.value}</td>
-                      <td className="py-3 px-4 text-right"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${i.up?"bg-emerald-50 text-emerald-600":"bg-red-50 text-red-500"}`}>{i.change}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="grid grid-cols-3 px-4 py-3 border-b border-gray-200">
+                <span className="text-xs font-medium text-gray-600">指標</span>
+                <span className="text-xs font-medium text-gray-600 text-right">現在値</span>
+                <span className="text-xs font-medium text-gray-600 text-right">変動</span>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {INDICATORS.map((ind,idx)=>{
+                  const isOpen = expandedIndicator === idx;
+                  return (
+                    <div key={ind.name}>
+                      <button className="w-full grid grid-cols-3 items-center px-4 py-3 hover:bg-gray-50 transition text-left" onClick={()=>setExpandedIndicator(isOpen?null:idx)}>
+                        <span className="text-sm font-medium text-gray-900 flex items-center gap-2">{ind.name}<span className={`text-gray-400 text-xs transition-transform duration-200 ${isOpen?"rotate-90":""}`}>▶</span></span>
+                        <span className="text-sm font-bold font-mono text-gray-900 text-right">{ind.value}</span>
+                        <span className="text-right"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${ind.up?"bg-emerald-50 text-emerald-600":"bg-red-50 text-red-500"}`}>{ind.change}</span></span>
+                      </button>
+                      {isOpen && (
+                        <div className="px-4 pb-3">
+                          <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs text-gray-600 leading-relaxed">{ind.d}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* 日本経済・世界経済 */}
@@ -1054,39 +1107,75 @@ function InvestmentDashboard() {
               <div>
                 <h2 className="text-lg font-bold text-gray-900 mb-3">🇯🇵 日本経済</h2>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <table className="w-full">
-                    <thead><tr className="border-b border-gray-200">
-                      <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left">テーマ</th>
-                      <th className="py-3 px-4 text-xs font-medium text-gray-600 text-right">状況</th>
-                    </tr></thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {[{l:"日銀政策金利",s:"利上げ局面",c:"text-amber-600",b:"bg-amber-50",d:"インフレ2%目標の持続性を注視"},{l:"円安/円高",s:"円安傾向",c:"text-red-500",b:"bg-red-50",d:"輸出企業にプラス、内需にマイナス"},{l:"賃金上昇",s:"改善中",c:"text-emerald-600",b:"bg-emerald-50",d:"春闘の結果が消費に波及するか"},{l:"企業業績",s:"好調",c:"text-emerald-600",b:"bg-emerald-50",d:"PBR1倍割れ是正の動きが加速"}].map(x=>(
-                        <tr key={x.l}>
-                          <td className="py-3 px-4"><span className="text-sm font-medium text-gray-900">{x.l}</span><p className="text-xs text-gray-600 mt-0.5">{x.d}</p></td>
-                          <td className="py-3 px-4 text-right"><span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="grid grid-cols-2 border-b border-gray-200 py-3 px-4">
+                    <span className="text-xs font-medium text-gray-600">テーマ</span>
+                    <span className="text-xs font-medium text-gray-600 text-right">状況</span>
+                  </div>
+                  {[
+                    {l:"日銀政策金利",s:"利上げ局面",c:"text-amber-600",b:"bg-amber-50",d:"インフレ2%目標の持続性を注視",
+                     detail:"日本銀行が設定する短期金利のこと。金利が上がると借入コストが増え、企業の設備投資や住宅ローンに影響します。預金金利も上がるため貯蓄にはプラス。株式市場には一般的にマイナス要因ですが、銀行株には追い風になります。「利上げ局面」は日銀がインフレ抑制のため段階的に金利を引き上げている状態です。"},
+                    {l:"円安/円高",s:"円安傾向",c:"text-red-500",b:"bg-red-50",d:"輸出企業にプラス、内需にマイナス",
+                     detail:"円の価値が他国通貨に対して変動すること。円安（例: 1ドル=150円）になると、トヨタやソニーなど輸出企業の海外売上が円換算で増え業績にプラス。一方、輸入品（食料・エネルギー）が値上がりし生活コストが上昇します。海外投資信託の円換算価値も上がるため、外国株ファンドを持つ投資家にはプラスです。"},
+                    {l:"賃金上昇",s:"改善中",c:"text-emerald-600",b:"bg-emerald-50",d:"春闘の結果が消費に波及するか",
+                     detail:"労働者の給与が上がっているかどうか。賃金が上がれば消費が活発になり、企業業績の改善→株価上昇という好循環が期待できます。日本では毎年2〜3月の「春闘」（労使交渉）で賃上げ率が決まり、経済全体のトレンドを示す重要な指標です。実質賃金（物価上昇分を差し引いた賃金）がプラスになるかが注目点です。"},
+                    {l:"企業業績",s:"好調",c:"text-emerald-600",b:"bg-emerald-50",d:"PBR1倍割れ是正の動きが加速",
+                     detail:"日本企業全体の利益動向。東京証券取引所が「PBR1倍割れ」（株価が企業の解散価値を下回る状態）の企業に改善を要請し、多くの企業が自社株買いや配当増で株主還元を強化しています。企業業績が「好調」な時は増配や株価上昇が期待できます。決算発表シーズン（4月・7月・10月・1月）に注目しましょう。"}
+                  ].map(x=>(
+                    <div key={x.l} className="border-b border-gray-100 last:border-b-0">
+                      <div className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-gray-50 transition" onClick={()=>setExpandedJpEcon(expandedJpEcon===x.l?null:x.l)}>
+                        <div className="flex-1 min-w-0 mr-3">
+                          <span className="text-sm font-medium text-gray-900">{x.l}</span>
+                          <p className="text-xs text-gray-500 mt-0.5">{x.d}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span>
+                          <span className={`text-gray-400 text-xs transition-transform ${expandedJpEcon===x.l?"rotate-90":""}`}>▶</span>
+                        </div>
+                      </div>
+                      {expandedJpEcon===x.l && (
+                        <div className="px-4 pb-3">
+                          <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg p-3">{x.detail}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900 mb-3">🌐 世界経済</h2>
                 <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <table className="w-full">
-                    <thead><tr className="border-b border-gray-200">
-                      <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left">テーマ</th>
-                      <th className="py-3 px-4 text-xs font-medium text-gray-600 text-right">状況</th>
-                    </tr></thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {[{l:"米国FRB",s:"利下げ検討中",c:"text-sky-600",b:"bg-sky-50",d:"インフレ鈍化で利下げ時期が焦点"},{l:"米国景気",s:"ソフトランディング",c:"text-emerald-600",b:"bg-emerald-50",d:"雇用は堅調だが減速の兆候も"},{l:"中国経済",s:"減速懸念",c:"text-red-500",b:"bg-red-50",d:"不動産危機の波及範囲に注意"},{l:"地政学リスク",s:"高止まり",c:"text-amber-600",b:"bg-amber-50",d:"中東・台湾海峡情勢が市場に影響"}].map(x=>(
-                        <tr key={x.l}>
-                          <td className="py-3 px-4"><span className="text-sm font-medium text-gray-900">{x.l}</span><p className="text-xs text-gray-600 mt-0.5">{x.d}</p></td>
-                          <td className="py-3 px-4 text-right"><span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="grid grid-cols-2 border-b border-gray-200 py-3 px-4">
+                    <span className="text-xs font-medium text-gray-600">テーマ</span>
+                    <span className="text-xs font-medium text-gray-600 text-right">状況</span>
+                  </div>
+                  {[
+                    {l:"米国FRB",s:"利下げ検討中",c:"text-sky-600",b:"bg-sky-50",d:"インフレ鈍化で利下げ時期が焦点",
+                     detail:"FRB（連邦準備制度理事会）は米国の中央銀行で、世界の金融市場に最大の影響力を持ちます。FRBが利下げすると、ドル安→円高になりやすく、日本の輸出企業にはマイナス。一方、米国株は資金調達コスト低下で上昇しやすくなります。FOMC（年8回開催）での金利決定が最重要イベントです。"},
+                    {l:"米国景気",s:"ソフトランディング",c:"text-emerald-600",b:"bg-emerald-50",d:"雇用は堅調だが減速の兆候も",
+                     detail:"世界最大の経済大国の景気動向は、日本を含む世界中の株式市場に影響します。「ソフトランディング」とは、景気が急激に悪化（ハードランディング）せず緩やかに減速する理想的なシナリオ。雇用統計（毎月第1金曜発表）やGDP成長率が重要指標です。S&P500指数が米国株全体の動きを示します。"},
+                    {l:"中国経済",s:"減速懸念",c:"text-red-500",b:"bg-red-50",d:"不動産危機の波及範囲に注意",
+                     detail:"中国は世界第2位の経済大国で、日本にとって最大の貿易相手国。中国経済が減速すると、日本の輸出企業（機械・化学・電子部品）の業績に直接影響します。不動産セクターの危機が金融システムや消費に波及するリスクがあり、中国関連の日本株（ファナック、コマツなど）の値動きに注意が必要です。"},
+                    {l:"地政学リスク",s:"高止まり",c:"text-amber-600",b:"bg-amber-50",d:"中東・台湾海峡情勢が市場に影響",
+                     detail:"戦争・紛争・政治的緊張など、地理的・政治的な要因による経済リスク。中東情勢が悪化すると原油価格が上昇し、エネルギーコスト増→インフレ加速→株安の連鎖が起きやすくなります。台湾海峡の緊張は半導体供給に影響し、テック株に波及。有事には「安全資産」として金や米国債が買われる傾向があります。"}
+                  ].map(x=>(
+                    <div key={x.l} className="border-b border-gray-100 last:border-b-0">
+                      <div className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-gray-50 transition" onClick={()=>setExpandedWorldEcon(expandedWorldEcon===x.l?null:x.l)}>
+                        <div className="flex-1 min-w-0 mr-3">
+                          <span className="text-sm font-medium text-gray-900">{x.l}</span>
+                          <p className="text-xs text-gray-500 mt-0.5">{x.d}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span>
+                          <span className={`text-gray-400 text-xs transition-transform ${expandedWorldEcon===x.l?"rotate-90":""}`}>▶</span>
+                        </div>
+                      </div>
+                      {expandedWorldEcon===x.l && (
+                        <div className="px-4 pb-3">
+                          <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg p-3">{x.detail}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1119,6 +1208,41 @@ function InvestmentDashboard() {
         {/* ========== LEARN ========== */}
         {activeTab === "learn" && (
           <div className="space-y-5">
+            {/* ── 銘柄カードの見方ガイド ── */}
+            <div>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">銘柄カードの見方</h2>
+              <p className="text-xs text-gray-500 mb-3">銘柄一覧で表示される各項目の意味と、数字の読み方を解説します</p>
+              <div className="space-y-3">
+                {STOCK_GUIDE.map(g=>(
+                  <div key={g.cat} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                      <h3 className="text-sm font-bold text-gray-900">{g.cat}</h3>
+                    </div>
+                    <div className="divide-y divide-gray-100">
+                      {g.items.map((item,i)=>{
+                        const gKey = g.cat+"-"+i;
+                        const isOpen = expandedGuide === gKey;
+                        return (
+                          <div key={gKey}>
+                            <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left" onClick={()=>setExpandedGuide(isOpen?null:gKey)}>
+                              <span className="min-w-[3rem] text-xs font-mono font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded text-center flex-shrink-0">{item.icon}</span>
+                              <span className="text-sm text-gray-700 flex-1">{item.t}</span>
+                              <span className={`text-gray-400 text-xs transition-transform duration-200 ${isOpen?"rotate-90":""}`}>▶</span>
+                            </button>
+                            {isOpen && (
+                              <div className="px-4 pb-3">
+                                <div className="ml-16 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs text-gray-600 leading-relaxed">{item.d}</div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* 投資学習マップ */}
             <div>
               <h2 className="text-lg font-bold text-gray-900 mb-1">投資学習マップ</h2>
