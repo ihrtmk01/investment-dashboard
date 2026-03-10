@@ -18,7 +18,7 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useMemo, Fragment } = React;
+    const { useState, useMemo, useEffect, Fragment } = React;
     const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Bar, ComposedChart, Area } = Recharts;
 
 
@@ -635,9 +635,33 @@ const TT = ({ active, payload, label }) => {
 
 /* ================================================================ MAIN ================================================================ */
 function InvestmentDashboard() {
+  const [dataUpdatedAt, setDataUpdatedAt] = useState(null);
   const [activeDB, setActiveDB] = useState("all");
   const [activeTab, setActiveTab] = useState("stocks");
   const [viewMode, setViewMode] = useState("card");
+
+  /* ── data.json から最新株価を読み込み ALL_STOCKS を上書き ── */
+  useEffect(() => {
+    fetch("data.json")
+      .then(r => { if (!r.ok) throw new Error("data.json not found"); return r.json(); })
+      .then(json => {
+        const stocks = json.stocks || {};
+        let updated = 0;
+        ALL_STOCKS.forEach(s => {
+          const d = stocks[s.ticker];
+          if (d) {
+            if (d.price != null) s.price = d.price;
+            if (d.change != null) s.change = d.change;
+            if (d.pe != null && d.pe > 0) s.pe = d.pe;
+            if (d.div != null) s.div = d.div;
+            updated++;
+          }
+        });
+        setDataUpdatedAt(json.updated_at || null);
+        console.log(`📊 Loaded live data: ${updated}/${ALL_STOCKS.length} stocks updated (${json.updated_at})`);
+      })
+      .catch(e => console.log("ℹ data.json not available, using built-in data:", e.message));
+  }, []);
   const [selectedStock, setSelectedStock] = useState(null);
   const [catFilter, setCatFilter] = useState("all");
   const [searchQ, setSearchQ] = useState("");
@@ -825,6 +849,7 @@ function InvestmentDashboard() {
         {activeDB === "all" && (
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">投資学習ダッシュボード</h1>
+            {dataUpdatedAt && <p className="text-xs text-gray-400 mt-1">📊 データ更新: {dataUpdatedAt}</p>}
           </div>
         )}
 
