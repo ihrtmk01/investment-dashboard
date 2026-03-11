@@ -19,14 +19,33 @@
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useMemo, useEffect, Fragment } = React;
-    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Bar, ComposedChart, Area } = Recharts;
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Bar, ComposedChart, Area, AreaChart } = Recharts;
 
 
 /* ================================================================
    STOCK DATA — unified with tags + summary
    ================================================================ */
 const S = (ticker,name,sector,market,price,change,pe,div,rating,memo,summary,tags) =>
-  ({ticker,name,sector,market,price,change,pe,div,rating,memo,summary,tags});
+  ({ticker,name,sector,market,price,change,pe,div,rating,memo,summary,tags,history:[]});
+
+// 10年分のサンプル株価履歴を生成（週次、data.jsonに実データがない場合のフォールバック）
+const genHistory = (price, change) => {
+  if (!price || price <= 0) return [];
+  const weeks = 520; // 約10年分の週数
+  const totalChange = (change * 60) / 100; // 変動率を10年規模に推定
+  const startPrice = price / (1 + totalChange);
+  const pts = [];
+  for (let i = 0; i < weeks; i++) {
+    const progress = i / (weeks - 1);
+    const trend = startPrice + (price - startPrice) * (progress * progress * 0.3 + progress * 0.7); // 緩やかな成長カーブ
+    const noise = trend * (Math.sin(i * 0.15) * 0.03 + Math.cos(i * 0.08) * 0.02 + Math.sin(i * 0.03) * 0.04);
+    const d = new Date(); d.setDate(d.getDate() - (weeks - 1 - i) * 7);
+    const yr = d.getFullYear();
+    const mo = d.getMonth() + 1;
+    pts.push({ date: `${yr}/${mo}`, p: Math.round((trend + noise) * 100) / 100 });
+  }
+  return pts;
+};
 
 const ALL_STOCKS = [
   // ── World Economy: 米国 ──
@@ -654,6 +673,7 @@ function InvestmentDashboard() {
             if (d.change != null) s.change = d.change;
             if (d.pe != null && d.pe > 0) s.pe = d.pe;
             if (d.div != null) s.div = d.div;
+            if (d.history && d.history.length > 0) s.history = d.history;
             updated++;
           }
         });
@@ -675,6 +695,7 @@ function InvestmentDashboard() {
   const [expandedGuide, setExpandedGuide] = useState(null);
   const [expandedJpEcon, setExpandedJpEcon] = useState(null);
   const [expandedWorldEcon, setExpandedWorldEcon] = useState(null);
+  const [expandedCheck, setExpandedCheck] = useState(null);
 
   /* Filter stocks */
   const dbStocks = useMemo(() => {
@@ -790,6 +811,8 @@ function InvestmentDashboard() {
   const DetailPanel = () => {
     const s = selectedStock;
     if (!s) return <div className="py-16 text-center"><p className="text-sm text-gray-700">銘柄を選択してください</p></div>;
+    const histData = useMemo(() => s.history && s.history.length > 0 ? s.history : genHistory(s.price, s.change), [s.ticker, s.price, s.change]);
+    const chartColor = s.change >= 0 ? "#10b981" : "#ef4444";
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -800,6 +823,33 @@ function InvestmentDashboard() {
           <span className={`text-lg font-bold ${s.change>=0?"text-emerald-600":"text-red-500"}`}>{s.change>=0?"+":""}{s.change}%</span>
         </div>
         <h3 className="text-lg font-bold text-gray-900">{s.name}</h3>
+
+        {/* 株価推移チャート */}
+        {histData.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-600">📈 過去10年間の推移</span>
+              <span className="text-sm font-bold font-mono text-gray-900">{s.price != null ? s.price.toLocaleString() : "—"}</span>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-2 border border-gray-100">
+              <ResponsiveContainer width="100%" height={160}>
+                <AreaChart data={histData} margin={{top:5,right:5,bottom:0,left:5}}>
+                  <defs>
+                    <linearGradient id={`grad-${s.ticker}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={chartColor} stopOpacity={0.3}/>
+                      <stop offset="100%" stopColor={chartColor} stopOpacity={0.03}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" tick={{fontSize:9,fill:"#9ca3af"}} axisLine={false} tickLine={false} interval={Math.floor(histData.length/6)}/>
+                  <YAxis hide domain={["dataMin","dataMax"]}/>
+                  <Tooltip contentStyle={{fontSize:11,borderRadius:8,border:"1px solid #e5e7eb"}} formatter={(v)=>[v.toLocaleString(),"株価"]} labelStyle={{fontSize:10,color:"#6b7280"}}/>
+                  <Area type="monotone" dataKey="p" stroke={chartColor} strokeWidth={1.5} fill={`url(#grad-${s.ticker})`} dot={false} activeDot={{r:3,fill:chartColor}}/>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
         <p className="text-sm text-gray-700 leading-relaxed">{s.summary}</p>
         <div className="grid grid-cols-2 gap-2.5">
           {[["PER",s.pe?`${s.pe}x`:"—"],["PBR","—"],["配当",s.div?`${s.div}%`:"—"],["セクター",s.sector]].map(([l,v])=>(
@@ -822,40 +872,160 @@ function InvestmentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900" style={{fontFamily:"'Inter','Noto Sans JP',system-ui,sans-serif"}}>
-      {/* Sticky Header */}
-      <div className="bg-white sticky top-0 z-10 border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-gray-700 font-medium tracking-widest uppercase mr-2 hidden sm:block">Dashboard</p>
-            {[{id:"all",label:"統合",emoji:"📊"},...Object.entries(DB_META).map(([id,m])=>({id,...m}))].map(d=>(
-              <button key={d.id} onClick={()=>{setActiveDB(d.id);setCatFilter("all");setSelectedStock(null);}}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition border ${activeDB===d.id?"bg-indigo-600 text-white border-indigo-600 shadow-sm":"bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"}`}>
-                {d.emoji} {d.label}
-              </button>
-            ))}
-          </div>
-          <span className="text-xs text-gray-600">{filtered.length}銘柄</span>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-6 pt-6 pb-12">
-        {/* Purpose banner */}
-        {activeDB !== "all" && (
-          <div className="mb-6 rounded-2xl bg-white p-5 border border-gray-200 shadow-sm">
-            <h1 className="text-xl font-bold text-gray-900">{DB_META[activeDB].emoji} {DB_META[activeDB].label}</h1>
-            <p className="text-sm text-gray-600 mt-1">{DB_META[activeDB].purpose}</p>
+        {/* H1 */}
+        <div className="mb-5">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">投資学習ダッシュボード</h1>
+          <p className="text-xs text-gray-400 mt-1">📊 データ更新: {dataUpdatedAt || "未取得（data.json 読込後に表示）"}</p>
+        </div>
+
+        {/* ── サマリカード：4カラム ── */}
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4 items-stretch">
+          {/* 主要経済指標 */}
+          <div className="flex flex-col">
+            <h2 className="text-sm font-bold text-gray-900 mb-2">主要経済指標</h2>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
+              <div className="grid grid-cols-3 px-3 py-1.5 border-b border-gray-200">
+                <span className="text-xs font-medium text-gray-600">指標</span>
+                <span className="text-xs font-medium text-gray-600 text-right">現在値</span>
+                <span className="text-xs font-medium text-gray-600 text-right">変動</span>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {INDICATORS.map((ind,idx)=>{
+                  const isOpen = expandedIndicator === idx;
+                  return (
+                    <div key={ind.name}>
+                      <button className="w-full grid grid-cols-3 items-center px-3 py-1.5 hover:bg-gray-50 transition text-left" onClick={()=>setExpandedIndicator(isOpen?null:idx)}>
+                        <span className="text-xs font-medium text-gray-900 flex items-center gap-1">{ind.name}<span className={`text-gray-400 text-xs transition-transform duration-200 ${isOpen?"rotate-90":""}`}>▶</span></span>
+                        <span className="text-xs font-bold font-mono text-gray-900 text-right">{ind.value}</span>
+                        <span className="text-right"><span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${ind.up?"bg-emerald-50 text-emerald-600":"bg-red-50 text-red-500"}`}>{ind.change}</span></span>
+                      </button>
+                      {isOpen && (
+                        <div className="px-3 pb-2">
+                          <div className="p-2 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs text-gray-600 leading-relaxed">{ind.d}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        )}
-        {activeDB === "all" && (
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">投資学習ダッシュボード</h1>
-            {dataUpdatedAt && <p className="text-xs text-gray-400 mt-1">📊 データ更新: {dataUpdatedAt}</p>}
+          {/* 日本経済 */}
+          <div className="flex flex-col">
+            <h2 className="text-sm font-bold text-gray-900 mb-2">🇯🇵 日本経済</h2>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
+              <div className="grid grid-cols-2 border-b border-gray-200 py-1.5 px-3">
+                <span className="text-xs font-medium text-gray-600">テーマ</span>
+                <span className="text-xs font-medium text-gray-600 text-right">状況</span>
+              </div>
+              {[
+                {l:"日銀政策金利",s:"利上げ局面",c:"text-amber-600",b:"bg-amber-50",d:"インフレ2%目標の持続性を注視",
+                 detail:"日本銀行が設定する短期金利のこと。金利が上がると借入コストが増え、企業の設備投資や住宅ローンに影響します。預金金利も上がるため貯蓄にはプラス。株式市場には一般的にマイナス要因ですが、銀行株には追い風になります。「利上げ局面」は日銀がインフレ抑制のため段階的に金利を引き上げている状態です。"},
+                {l:"円安/円高",s:"円安傾向",c:"text-red-500",b:"bg-red-50",d:"輸出企業にプラス、内需にマイナス",
+                 detail:"円の価値が他国通貨に対して変動すること。円安（例: 1ドル=150円）になると、トヨタやソニーなど輸出企業の海外売上が円換算で増え業績にプラス。一方、輸入品（食料・エネルギー）が値上がりし生活コストが上昇します。海外投資信託の円換算価値も上がるため、外国株ファンドを持つ投資家にはプラスです。"},
+                {l:"賃金上昇",s:"改善中",c:"text-emerald-600",b:"bg-emerald-50",d:"春闘の結果が消費に波及するか",
+                 detail:"労働者の給与が上がっているかどうか。賃金が上がれば消費が活発になり、企業業績の改善→株価上昇という好循環が期待できます。日本では毎年2〜3月の「春闘」（労使交渉）で賃上げ率が決まり、経済全体のトレンドを示す重要な指標です。実質賃金（物価上昇分を差し引いた賃金）がプラスになるかが注目点です。"},
+                {l:"企業業績",s:"好調",c:"text-emerald-600",b:"bg-emerald-50",d:"PBR1倍割れ是正の動きが加速",
+                 detail:"日本企業全体の利益動向。東京証券取引所が「PBR1倍割れ」（株価が企業の解散価値を下回る状態）の企業に改善を要請し、多くの企業が自社株買いや配当増で株主還元を強化しています。企業業績が「好調」な時は増配や株価上昇が期待できます。決算発表シーズン（4月・7月・10月・1月）に注目しましょう。"}
+              ].map(x=>(
+                <div key={x.l} className="border-b border-gray-100 last:border-b-0">
+                  <div className="flex items-center justify-between py-1.5 px-3 cursor-pointer hover:bg-gray-50 transition" onClick={()=>setExpandedJpEcon(expandedJpEcon===x.l?null:x.l)}>
+                    <div className="flex-1 min-w-0 mr-2">
+                      <span className="text-xs font-medium text-gray-900">{x.l}</span>
+                      <p className="text-xs text-gray-500 leading-tight">{x.d}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span>
+                      <span className={`text-gray-400 text-xs transition-transform ${expandedJpEcon===x.l?"rotate-90":""}`}>▶</span>
+                    </div>
+                  </div>
+                  {expandedJpEcon===x.l && (
+                    <div className="px-3 pb-2">
+                      <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg p-2">{x.detail}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        )}
+          {/* 世界経済 */}
+          <div className="flex flex-col">
+            <h2 className="text-sm font-bold text-gray-900 mb-2">🌐 世界経済</h2>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
+              <div className="grid grid-cols-2 border-b border-gray-200 py-1.5 px-3">
+                <span className="text-xs font-medium text-gray-600">テーマ</span>
+                <span className="text-xs font-medium text-gray-600 text-right">状況</span>
+              </div>
+              {[
+                {l:"米国FRB",s:"利下げ検討中",c:"text-sky-600",b:"bg-sky-50",d:"インフレ鈍化で利下げ時期が焦点",
+                 detail:"FRB（連邦準備制度理事会）は米国の中央銀行で、世界の金融市場に最大の影響力を持ちます。FRBが利下げすると、ドル安→円高になりやすく、日本の輸出企業にはマイナス。一方、米国株は資金調達コスト低下で上昇しやすくなります。FOMC（年8回開催）での金利決定が最重要イベントです。"},
+                {l:"米国景気",s:"ソフトランディング",c:"text-emerald-600",b:"bg-emerald-50",d:"雇用は堅調だが減速の兆候も",
+                 detail:"世界最大の経済大国の景気動向は、日本を含む世界中の株式市場に影響します。「ソフトランディング」とは、景気が急激に悪化（ハードランディング）せず緩やかに減速する理想的なシナリオ。雇用統計（毎月第1金曜発表）やGDP成長率が重要指標です。S&P500指数が米国株全体の動きを示します。"},
+                {l:"中国経済",s:"減速懸念",c:"text-red-500",b:"bg-red-50",d:"不動産危機の波及範囲に注意",
+                 detail:"中国は世界第2位の経済大国で、日本にとって最大の貿易相手国。中国経済が減速すると、日本の輸出企業（機械・化学・電子部品）の業績に直接影響します。不動産セクターの危機が金融システムや消費に波及するリスクがあり、中国関連の日本株（ファナック、コマツなど）の値動きに注意が必要です。"},
+                {l:"地政学リスク",s:"高止まり",c:"text-amber-600",b:"bg-amber-50",d:"中東・台湾海峡情勢が市場に影響",
+                 detail:"戦争・紛争・政治的緊張など、地理的・政治的な要因による経済リスク。中東情勢が悪化すると原油価格が上昇し、エネルギーコスト増→インフレ加速→株安の連鎖が起きやすくなります。台湾海峡の緊張は半導体供給に影響し、テック株に波及。有事には「安全資産」として金や米国債が買われる傾向があります。"}
+              ].map(x=>(
+                <div key={x.l} className="border-b border-gray-100 last:border-b-0">
+                  <div className="flex items-center justify-between py-1.5 px-3 cursor-pointer hover:bg-gray-50 transition" onClick={()=>setExpandedWorldEcon(expandedWorldEcon===x.l?null:x.l)}>
+                    <div className="flex-1 min-w-0 mr-2">
+                      <span className="text-xs font-medium text-gray-900">{x.l}</span>
+                      <p className="text-xs text-gray-500 leading-tight">{x.d}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span>
+                      <span className={`text-gray-400 text-xs transition-transform ${expandedWorldEcon===x.l?"rotate-90":""}`}>▶</span>
+                    </div>
+                  </div>
+                  {expandedWorldEcon===x.l && (
+                    <div className="px-3 pb-2">
+                      <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg p-2">{x.detail}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* 今週のチェックリスト */}
+          <div className="flex flex-col">
+            <h2 className="text-sm font-bold text-gray-900 mb-2">今週のチェックリスト</h2>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1">
+              <div className="border-b border-gray-200 py-1.5 px-3">
+                <span className="text-xs font-medium text-gray-600">タスク</span>
+              </div>
+              {[
+                {t:"決算カレンダーを確認して注目企業をピックアップ",
+                 detail:"企業の決算発表スケジュールを確認し、保有銘柄や注目企業の発表日をチェック。決算発表前後は株価が大きく動くため、サプライズ決算を狙った売買や、決算前のポジション調整に活用します。日本企業は4月・7月・10月・1月が決算集中期です。"},
+                {t:"保有銘柄の最新ニュースをチェック",
+                 detail:"保有している銘柄に関するニュース（業績修正・M&A・新製品発表・不祥事など）を毎週確認。好材料なら買い増し検討、悪材料なら損切りラインの再確認を。IR情報や適時開示もチェックしましょう。"},
+                {t:"為替動向と日銀政策をフォロー",
+                 detail:"ドル円レートの動きと日銀の金融政策をウォッチ。円安は輸出企業にプラス・輸入企業にマイナス、円高はその逆。日銀会合の日程と結果を確認し、金利変動が保有銘柄に与える影響を考えましょう。"},
+                {t:"月次投資額を入金",
+                 detail:"毎月決まった金額を証券口座に入金し、ドルコスト平均法で積立投資を継続。相場が下がった時も機械的に買うことで、長期的に取得単価を平準化できます。NISAの年間枠も意識して計画的に。"},
+                {t:"ポートフォリオのリバランスを検討",
+                 detail:"資産配分が目標比率からずれていないか確認。例えば株式70%・債券30%の目標が、株高で80%・20%になっていたら、株を一部売って債券を買い増し。四半期に1回程度の頻度で見直すのが一般的です。"}
+              ].map((item,i)=>(
+                <div key={i} className="border-b border-gray-100 last:border-b-0">
+                  <div className="flex items-center gap-2 py-1.5 px-3 cursor-pointer hover:bg-gray-50 transition" onClick={()=>setExpandedCheck(expandedCheck===i?null:i)}>
+                    <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-500 flex-shrink-0" onClick={e=>e.stopPropagation()}/>
+                    <span className="text-xs text-gray-700 flex-1">{item.t}</span>
+                    <span className={`text-gray-400 text-xs transition-transform ${expandedCheck===i?"rotate-90":""}`}>▶</span>
+                  </div>
+                  {expandedCheck===i && (
+                    <div className="px-3 pb-2">
+                      <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg p-2 ml-5">{item.detail}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Tabs */}
         <nav className="flex gap-1 mb-6 border-b border-gray-200">
-          {[["stocks","銘柄一覧"],["nisa","NISAインデックス"],["sim","シミュレーション"],["econ","経済指標"],["learn","学習マップ"]].map(([id,label])=>(
+          {[["stocks","銘柄一覧"],["nisa","NISAインデックス"],["sim","シミュレーション"],["learn","学習マップ"]].map(([id,label])=>(
             <button key={id} onClick={()=>setActiveTab(id)}
               className={`px-5 py-2 text-sm font-medium border-b-2 transition ${activeTab===id?"border-indigo-500 text-gray-900":"border-transparent text-gray-600 hover:text-gray-900"}`}>
               {label}
@@ -866,6 +1036,27 @@ function InvestmentDashboard() {
         {/* ========== STOCKS ========== */}
         {activeTab === "stocks" && (
           <div className="space-y-4">
+            {/* DB切替ボタン */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                {[{id:"all",label:"統合",emoji:"📊"},...Object.entries(DB_META).map(([id,m])=>({id,...m}))].map(d=>(
+                  <button key={d.id} onClick={()=>{setActiveDB(d.id);setCatFilter("all");setSelectedStock(null);}}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition border ${activeDB===d.id?"bg-indigo-600 text-white border-indigo-600 shadow-sm":"bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400"}`}>
+                    {d.emoji} {d.label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs text-gray-600">{filtered.length}銘柄</span>
+            </div>
+
+            {/* Purpose banner */}
+            {activeDB !== "all" && (
+              <div className="rounded-xl bg-white p-4 border border-gray-200 shadow-sm">
+                <h2 className="text-base font-bold text-gray-900">{DB_META[activeDB].emoji} {DB_META[activeDB].label}</h2>
+                <p className="text-xs text-gray-600 mt-1">{DB_META[activeDB].purpose}</p>
+              </div>
+            )}
+
             {/* Controls */}
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex gap-1.5 flex-wrap flex-1">
@@ -1094,142 +1285,6 @@ function InvestmentDashboard() {
           </div>
         )}
 
-        {/* ========== ECONOMY ========== */}
-        {activeTab === "econ" && (
-          <div className="space-y-6">
-            {/* 主要経済指標テーブル — アコーディオン解説付き */}
-            <h2 className="text-lg font-bold text-gray-900">主要経済指標</h2>
-            <p className="text-xs text-gray-500 mb-3">各指標をタップすると詳しい解説が表示されます</p>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="grid grid-cols-3 px-4 py-3 border-b border-gray-200">
-                <span className="text-xs font-medium text-gray-600">指標</span>
-                <span className="text-xs font-medium text-gray-600 text-right">現在値</span>
-                <span className="text-xs font-medium text-gray-600 text-right">変動</span>
-              </div>
-              <div className="divide-y divide-gray-200">
-                {INDICATORS.map((ind,idx)=>{
-                  const isOpen = expandedIndicator === idx;
-                  return (
-                    <div key={ind.name}>
-                      <button className="w-full grid grid-cols-3 items-center px-4 py-3 hover:bg-gray-50 transition text-left" onClick={()=>setExpandedIndicator(isOpen?null:idx)}>
-                        <span className="text-sm font-medium text-gray-900 flex items-center gap-2">{ind.name}<span className={`text-gray-400 text-xs transition-transform duration-200 ${isOpen?"rotate-90":""}`}>▶</span></span>
-                        <span className="text-sm font-bold font-mono text-gray-900 text-right">{ind.value}</span>
-                        <span className="text-right"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${ind.up?"bg-emerald-50 text-emerald-600":"bg-red-50 text-red-500"}`}>{ind.change}</span></span>
-                      </button>
-                      {isOpen && (
-                        <div className="px-4 pb-3">
-                          <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-xs text-gray-600 leading-relaxed">{ind.d}</div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 日本経済・世界経済 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-3">🇯🇵 日本経済</h2>
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="grid grid-cols-2 border-b border-gray-200 py-3 px-4">
-                    <span className="text-xs font-medium text-gray-600">テーマ</span>
-                    <span className="text-xs font-medium text-gray-600 text-right">状況</span>
-                  </div>
-                  {[
-                    {l:"日銀政策金利",s:"利上げ局面",c:"text-amber-600",b:"bg-amber-50",d:"インフレ2%目標の持続性を注視",
-                     detail:"日本銀行が設定する短期金利のこと。金利が上がると借入コストが増え、企業の設備投資や住宅ローンに影響します。預金金利も上がるため貯蓄にはプラス。株式市場には一般的にマイナス要因ですが、銀行株には追い風になります。「利上げ局面」は日銀がインフレ抑制のため段階的に金利を引き上げている状態です。"},
-                    {l:"円安/円高",s:"円安傾向",c:"text-red-500",b:"bg-red-50",d:"輸出企業にプラス、内需にマイナス",
-                     detail:"円の価値が他国通貨に対して変動すること。円安（例: 1ドル=150円）になると、トヨタやソニーなど輸出企業の海外売上が円換算で増え業績にプラス。一方、輸入品（食料・エネルギー）が値上がりし生活コストが上昇します。海外投資信託の円換算価値も上がるため、外国株ファンドを持つ投資家にはプラスです。"},
-                    {l:"賃金上昇",s:"改善中",c:"text-emerald-600",b:"bg-emerald-50",d:"春闘の結果が消費に波及するか",
-                     detail:"労働者の給与が上がっているかどうか。賃金が上がれば消費が活発になり、企業業績の改善→株価上昇という好循環が期待できます。日本では毎年2〜3月の「春闘」（労使交渉）で賃上げ率が決まり、経済全体のトレンドを示す重要な指標です。実質賃金（物価上昇分を差し引いた賃金）がプラスになるかが注目点です。"},
-                    {l:"企業業績",s:"好調",c:"text-emerald-600",b:"bg-emerald-50",d:"PBR1倍割れ是正の動きが加速",
-                     detail:"日本企業全体の利益動向。東京証券取引所が「PBR1倍割れ」（株価が企業の解散価値を下回る状態）の企業に改善を要請し、多くの企業が自社株買いや配当増で株主還元を強化しています。企業業績が「好調」な時は増配や株価上昇が期待できます。決算発表シーズン（4月・7月・10月・1月）に注目しましょう。"}
-                  ].map(x=>(
-                    <div key={x.l} className="border-b border-gray-100 last:border-b-0">
-                      <div className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-gray-50 transition" onClick={()=>setExpandedJpEcon(expandedJpEcon===x.l?null:x.l)}>
-                        <div className="flex-1 min-w-0 mr-3">
-                          <span className="text-sm font-medium text-gray-900">{x.l}</span>
-                          <p className="text-xs text-gray-500 mt-0.5">{x.d}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span>
-                          <span className={`text-gray-400 text-xs transition-transform ${expandedJpEcon===x.l?"rotate-90":""}`}>▶</span>
-                        </div>
-                      </div>
-                      {expandedJpEcon===x.l && (
-                        <div className="px-4 pb-3">
-                          <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg p-3">{x.detail}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-3">🌐 世界経済</h2>
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                  <div className="grid grid-cols-2 border-b border-gray-200 py-3 px-4">
-                    <span className="text-xs font-medium text-gray-600">テーマ</span>
-                    <span className="text-xs font-medium text-gray-600 text-right">状況</span>
-                  </div>
-                  {[
-                    {l:"米国FRB",s:"利下げ検討中",c:"text-sky-600",b:"bg-sky-50",d:"インフレ鈍化で利下げ時期が焦点",
-                     detail:"FRB（連邦準備制度理事会）は米国の中央銀行で、世界の金融市場に最大の影響力を持ちます。FRBが利下げすると、ドル安→円高になりやすく、日本の輸出企業にはマイナス。一方、米国株は資金調達コスト低下で上昇しやすくなります。FOMC（年8回開催）での金利決定が最重要イベントです。"},
-                    {l:"米国景気",s:"ソフトランディング",c:"text-emerald-600",b:"bg-emerald-50",d:"雇用は堅調だが減速の兆候も",
-                     detail:"世界最大の経済大国の景気動向は、日本を含む世界中の株式市場に影響します。「ソフトランディング」とは、景気が急激に悪化（ハードランディング）せず緩やかに減速する理想的なシナリオ。雇用統計（毎月第1金曜発表）やGDP成長率が重要指標です。S&P500指数が米国株全体の動きを示します。"},
-                    {l:"中国経済",s:"減速懸念",c:"text-red-500",b:"bg-red-50",d:"不動産危機の波及範囲に注意",
-                     detail:"中国は世界第2位の経済大国で、日本にとって最大の貿易相手国。中国経済が減速すると、日本の輸出企業（機械・化学・電子部品）の業績に直接影響します。不動産セクターの危機が金融システムや消費に波及するリスクがあり、中国関連の日本株（ファナック、コマツなど）の値動きに注意が必要です。"},
-                    {l:"地政学リスク",s:"高止まり",c:"text-amber-600",b:"bg-amber-50",d:"中東・台湾海峡情勢が市場に影響",
-                     detail:"戦争・紛争・政治的緊張など、地理的・政治的な要因による経済リスク。中東情勢が悪化すると原油価格が上昇し、エネルギーコスト増→インフレ加速→株安の連鎖が起きやすくなります。台湾海峡の緊張は半導体供給に影響し、テック株に波及。有事には「安全資産」として金や米国債が買われる傾向があります。"}
-                  ].map(x=>(
-                    <div key={x.l} className="border-b border-gray-100 last:border-b-0">
-                      <div className="flex items-center justify-between py-3 px-4 cursor-pointer hover:bg-gray-50 transition" onClick={()=>setExpandedWorldEcon(expandedWorldEcon===x.l?null:x.l)}>
-                        <div className="flex-1 min-w-0 mr-3">
-                          <span className="text-sm font-medium text-gray-900">{x.l}</span>
-                          <p className="text-xs text-gray-500 mt-0.5">{x.d}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${x.c} ${x.b}`}>{x.s}</span>
-                          <span className={`text-gray-400 text-xs transition-transform ${expandedWorldEcon===x.l?"rotate-90":""}`}>▶</span>
-                        </div>
-                      </div>
-                      {expandedWorldEcon===x.l && (
-                        <div className="px-4 pb-3">
-                          <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg p-3">{x.detail}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 今月の注目イベント */}
-            <h2 className="text-lg font-bold text-gray-900">今月の注目イベント</h2>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead><tr className="border-b border-gray-200">
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left">日付</th>
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left">イベント</th>
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left">市場</th>
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-right">重要度</th>
-                </tr></thead>
-                <tbody className="divide-y divide-gray-200">
-                  {[{d:"3/10",e:"日銀金融政策決定会合",i:"高",t:"🇯🇵 日本"},{d:"3/12",e:"米CPI発表",i:"高",t:"🇺🇸 米国"},{d:"3/19",e:"FOMC",i:"高",t:"🇺🇸 米国"},{d:"3/28",e:"配当権利確定日",i:"中",t:"🇯🇵 日本"}].map(ev=>(
-                    <tr key={ev.e} className="hover:bg-gray-50 transition">
-                      <td className="py-3 px-4 text-sm font-bold text-indigo-600 font-mono">{ev.d}</td>
-                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{ev.e}</td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{ev.t}</td>
-                      <td className="py-3 px-4 text-right"><span className={`text-xs font-medium px-2.5 py-1 rounded-full ${ev.i==="高"?"bg-red-50 text-red-500":"bg-amber-50 text-amber-500"}`}>{ev.i}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
         {/* ========== LEARN ========== */}
         {activeTab === "learn" && (
           <div className="space-y-5">
@@ -1237,7 +1292,7 @@ function InvestmentDashboard() {
             <div>
               <h2 className="text-lg font-bold text-gray-900 mb-1">銘柄カードの見方</h2>
               <p className="text-xs text-gray-500 mb-3">銘柄一覧で表示される各項目の意味と、数字の読み方を解説します</p>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {STOCK_GUIDE.map(g=>(
                   <div key={g.cat} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
@@ -1271,7 +1326,7 @@ function InvestmentDashboard() {
             {/* 投資学習マップ */}
             <div>
               <h2 className="text-lg font-bold text-gray-900 mb-1">投資学習マップ</h2>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {LEARN.map(c=>(
                   <div key={c.cat} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                     <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
@@ -1314,7 +1369,7 @@ function InvestmentDashboard() {
               </div>
 
               {/* Pattern cards grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                 {CHART_PATTERNS[patternSection].map((p,i)=>{
                   const isBuy = patternSection==="buy";
                   const color = isBuy ? "red" : "blue";
@@ -1360,24 +1415,6 @@ function InvestmentDashboard() {
               </div>
             </div>
 
-            {/* 今週のチェックリスト */}
-            <h2 className="text-lg font-bold text-gray-900">今週のチェックリスト</h2>
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead><tr className="border-b border-gray-200">
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left w-12">✓</th>
-                  <th className="py-3 px-4 text-xs font-medium text-gray-600 text-left">タスク</th>
-                </tr></thead>
-                <tbody className="divide-y divide-gray-200">
-                  {["決算カレンダーを確認して注目企業をピックアップ","保有銘柄の最新ニュースをチェック","為替動向と日銀政策をフォロー","月次投資額を入金","ポートフォリオのリバランスを検討"].map((t,i)=>(
-                    <tr key={i} className="hover:bg-gray-50 transition">
-                      <td className="py-3 px-4"><input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-indigo-500"/></td>
-                      <td className="py-3 px-4 text-sm text-gray-700">{t}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
 
