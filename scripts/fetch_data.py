@@ -87,7 +87,7 @@ def extract_all_tickers(html_path: str) -> list[str]:
 
 
 def fetch_stock_data(tickers: list[str]) -> dict:
-    """yfinance で全銘柄のデータを一括取得"""
+    """yfinance で全銘柄のデータを一括取得（10年分の週次履歴含む）"""
     yf_tickers = [get_yf_ticker(t) for t in tickers]
     ticker_to_original = {get_yf_ticker(t): t for t in tickers}
 
@@ -95,6 +95,10 @@ def fetch_stock_data(tickers: list[str]) -> dict:
 
     # yfinance の一括ダウンロード (直近2日分の日足)
     data = yf.download(yf_tickers, period="2d", group_by="ticker", progress=False)
+
+    # 10年分の履歴データを一括取得（週次に間引いてファイルサイズを抑制）
+    print("Fetching 10-year history (weekly)...")
+    hist_data = yf.download(yf_tickers, period="10y", interval="1wk", group_by="ticker", progress=False)
 
     # 個別銘柄の詳細情報を取得
     result = {}
@@ -132,14 +136,36 @@ def fetch_stock_data(tickers: list[str]) -> dict:
             else:
                 div_yield = 0.0
 
-            result[orig_t] = {
+            # 10年分の週次履歴データ
+            history = []
+            try:
+                if len(yf_tickers) == 1:
+                    hist_close = hist_data["Close"]
+                else:
+                    hist_close = hist_data[yf_t]["Close"] if yf_t in hist_data.columns.get_level_values(0) else None
+
+                if hist_close is not None:
+                    for date, val in hist_close.dropna().items():
+                        history.append({
+                            "date": f"{date.year}/{date.month}",
+                            "p": round(float(val), 2)
+                        })
+            except Exception:
+                pass  # 履歴取得失敗時はスキップ
+
+            entry = {
                 "price": round(price, 2),
                 "change": change,
                 "pe": pe,
                 "div": div_yield,
             }
+            if history:
+                entry["history"] = history
 
-            print(f"  ✓ {orig_t} → ¥{price} ({change:+.2f}%)")
+            result[orig_t] = entry
+
+            hist_info = f" [{len(history)}pts]" if history else ""
+            print(f"  ✓ {orig_t} → ¥{price} ({change:+.2f}%){hist_info}")
 
         except Exception as e:
             failed.append(orig_t)
@@ -155,8 +181,8 @@ def main():
     # パス設定
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.dirname(script_dir)
-    html_path = os.path.join(root_dir, "investment_dashboards", "index.html")
-    output_path = os.path.join(root_dir, "investment_dashboards", "data.json")
+    html_path = os.path.join(root_dir, "index.html")
+    output_path = os.path.join(root_dir, "data.json")
 
     # ティッカー抽出
     tickers = extract_all_tickers(html_path)
